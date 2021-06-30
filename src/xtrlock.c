@@ -351,6 +351,7 @@ help()
     printf("Options:\n");
     printf(" -h      This help message\n");
     printf(" -p MOD  PAM module, default is system-local-login\n");
+    printf(" -f      fingerprint mode (do not ask for password)\n");
     printf(" -b BG   background action, none, blank or bg, default is none\n");
     printf(" -s      suspend-mode; hack to support USB device after suspend\n");
 }

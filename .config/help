@@ -29,7 +29,7 @@ def fmt_2cols(name):
     text.strip()
 
     if text:
-        print "%s:\n%s" % (name, text)
+        print("%s:\n%s" % (name, text))
 
 
 def fmt_pre():
@@ -40,9 +40,9 @@ def fmt_pre():
             tok2.append(t.strip())
 
     for i, t in enumerate(tok2):
-        print 'Example %d:' % (i+1)
-        print t
-        print
+        print( 'Example %d:' % (i+1) )
+        print( t )
+        print( )
 
 if sys.argv[1] == 'variable':
     fmt_2cols('Variables')
