@@ -37,6 +37,8 @@
 #include "awesome.bitmap"
 #include "awesome_mask.bitmap"
 
+#include "loadbmp.h"
+
 //#define DEBUGPRN
 #include "dbg.h"
 
@@ -53,7 +55,7 @@ enum { MNONE, MBG, MBLANK };
 enum { AUTH_NONE, AUTH_NOW, AUTH_FAILED, AUTH_MAX };
 
 static struct {
-    char *fg, *bg;
+    char fg[512], bg[512];
     Cursor c;
 } cursors[AUTH_MAX] = {
     [ AUTH_NONE ] = { .bg = "deepskyblue", .fg = "grey25" },
@@ -71,33 +73,25 @@ char* pam_module = "system-local-login";
 
 int auth_pam(char *user, char *password, char *module);
 
-int passwordok(char *password)
-{
+static int passwordok(char *password) {
     return auth_pam(getenv("USER"), password, pam_module);
 }
 
-#define err(fmt, args...)                       \
+#define err(fmt, args...) \
     do { fprintf(stderr, fmt, ## args); } while(0)
 
-
-void
-handle_error(Display * d, XErrorEvent * ev)
-{
+static void handle_error(Display * d, XErrorEvent * ev) {
     char buf[256];
 
     XGetErrorText(display, ev->error_code, buf, 256);
     DBG("X error: %s\n", buf);
 }
 
-Window
-create_window(unsigned long values, XSetWindowAttributes *attrib)
-{
-    return XCreateWindow(display, root,
-        0, 0,
+static Window create_window(unsigned long values, XSetWindowAttributes *attrib) {
+    return XCreateWindow(display, root, 0, 0,
         DisplayWidth(display, screen),
         DisplayHeight(display, screen),
-        0, CopyFromParent, CopyFromParent, CopyFromParent,
-        values, attrib);
+        0, CopyFromParent, CopyFromParent, CopyFromParent, values, attrib);
 }
 
 /*
@@ -109,9 +103,7 @@ create_window(unsigned long values, XSetWindowAttributes *attrib)
  *  - that pixmap still exists
  * Return: pixmap on success, None otherwise
  */
-static Pixmap
-get_prop_pixmap(char *aname)
-{
+static Pixmap get_prop_pixmap(char *aname) {
     int rc, rf, idummy;
     unsigned long nitems, ldummy;
     unsigned char *ret;
@@ -120,7 +112,7 @@ get_prop_pixmap(char *aname)
     Atom rpa;
     Pixmap pix = None;
     Window rw = None;
-    
+
     DBG("atom: name %s, id %lu\n", aname, pa);
     if (pa == None)
         return None;
@@ -140,7 +132,7 @@ get_prop_pixmap(char *aname)
     DBG("pix 0x%lx\n", pix);
     if (pix == None)
         return None;
-    
+
     rc = XGetGeometry(display, pix, &rw, &idummy, &idummy,
         &uidummy, &uidummy, &uidummy, &uidummy);
     DBG("XGetGeometry %d; rwin %lx\n", rc, rw);
@@ -151,29 +143,25 @@ get_prop_pixmap(char *aname)
 }
 
 
-static Pixmap
-get_bg_pixmap()
-{
+static Pixmap get_bg_pixmap() {
     Pixmap pix = None;
 
     pix = get_prop_pixmap("_XROOTPMAP_ID");
     if (pix != None)
         return pix;
     ERR("root['_XROOTPMAP_ID'] is not valid pixmap\n");
-    
+
     return None;
 }
 
 
 /* If window creation fails, Xlib will exit an application */
-Window
-create_window_full(int mode)
-{
+static Window create_window_full(int mode) {
     XSetWindowAttributes attrib;
     unsigned long values = 0;
     Window window;
     Pixmap pix = None;
-    
+
     values = CWOverrideRedirect;
     attrib.override_redirect = True;
 
@@ -207,13 +195,11 @@ create_window_full(int mode)
     return window;
 }
 
-static void
-create_cursors(void)
-{
+static void create_cursors(void) {
     Pixmap csr_source,csr_mask;
     XColor dummy, def_bg, def_fg, bg, fg;
     int i;
-    
+
     csr_source = XCreateBitmapFromData(display, root, lock_bits,
         lock_width, lock_height);
     csr_mask = XCreateBitmapFromData(display, root, mask_bits, mask_width,
@@ -224,7 +210,7 @@ create_cursors(void)
         err("Can't allocate basic colors: black, white\n");
         exit(1);
     }
-     
+
     for (i = 0; i < AUTH_MAX; i++) {
         if (!XAllocNamedColor(display, cmap, cursors[i].fg, &dummy, &fg))
             fg = def_fg;
@@ -235,9 +221,7 @@ create_cursors(void)
     }
 }
 
-void
-lock(int mode)
-{
+static void lock(int mode) {
     XEvent ev;
     KeySym ks;
     char cbuf[10], rbuf[128];
@@ -342,9 +326,7 @@ lock(int mode)
     }
 }
 
-void
-help()
-{
+static void help() {
     printf("%s %s - PAM based X11 screen locker\n",
         PROJECT_NAME, PROJECT_VERSION);
     printf("Usage: %s [options...]\n", PROJECT_NAME);
@@ -354,12 +336,14 @@ help()
     printf(" -f      fingerprint mode (do not ask for password)\n");
     printf(" -b BG   background action, none, blank or bg, default is none\n");
     printf(" -s      suspend-mode; hack to support USB device after suspend\n");
+    printf(" -c COL  bg colors for [pre,active,failed] authentification\n");
+    printf(" -g COL  fg color for [...] authentification\n");
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     int opt;
-    while ((opt = getopt(argc, argv, "b:p:fh")) != -1) {
+    char colors[512];
+    while ((opt = getopt(argc, argv, "b:p:fc:g:h")) != -1) {
         switch (opt) {
         case 'h':
             help();
@@ -384,6 +368,27 @@ int main(int argc, char *argv[])
                 err("unknown bg action '%s'\n", optarg);
                 exit(1);
             }
+            break;
+
+        case 'c':
+            strncpy( colors, optarg, 512 );
+            char delim[] = ",";
+            char* ptr = strtok(colors, delim);
+
+            int i=0;
+            while(ptr != NULL) {
+                printf("%i: %s\n",i,ptr);
+                if (i==AUTH_NONE || i==AUTH_NOW || i==AUTH_FAILED)
+                    if (ptr) strcpy(cursors[i].bg,ptr);
+                ptr = strtok(NULL, delim);
+                i++;
+            }
+            break;
+        case 'g':
+            strncpy( colors, optarg, 512 );
+            strcpy( cursors[AUTH_NONE].fg, colors );
+            strcpy( cursors[AUTH_NOW].fg, colors );
+            strcpy( cursors[AUTH_FAILED].fg, colors );
             break;
 
         default:

@@ -22,10 +22,8 @@
 
 static char *luser, *lpassword;
 
-static int
-conv(int num_msg, const struct pam_message **msg,
-    struct pam_response **resp, void *appdata_ptr)
-{
+static int conv(int num_msg, const struct pam_message **msg,
+    struct pam_response **resp, void *appdata_ptr) {
     int i;
 
     int status = PAM_SUCCESS;
@@ -84,9 +82,7 @@ pam_error:
 }
 
 
-int
-auth_pam(char *user, char *password, char *module)
-{
+int auth_pam(char *user, char *password, char *module) {
     int pam_error = 0;
     struct pam_conv pc = { conv, NULL };
     pam_handle_t *pamh;
