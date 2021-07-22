@@ -57,6 +57,56 @@ static void bitwise_pixels_set( bitwise_pixels* pxl, int idx, int val ) {
     else bitwise_pixels_false( pxl, idx );
 }
 
+static int bitwise_pixels_get( const bitwise_pixels* pxl, int idx ) {
+    if (idx==0) return pxl->i0;
+    if (idx==1) return pxl->i1;
+    if (idx==2) return pxl->i2;
+    if (idx==3) return pxl->i3;
+    if (idx==4) return pxl->i4;
+    if (idx==5) return pxl->i5;
+    if (idx==6) return pxl->i6;
+    if (idx==7) return pxl->i7;
+    return 0;
+}
+
+static void bitwise_pixels_toggle_xy( bitwise_pixels* pxl, int x, int y, unsigned int width, unsigned int height ) {
+    int nbytes_per_row = width/8 + (width%8>=1);
+    int byte_idx = x/8 + y*nbytes_per_row;
+    int bit_idx = x%8;
+    bitwise_pixels_set( pxl + byte_idx, bit_idx, !bitwise_pixels_get( pxl + byte_idx, bit_idx ) );
+}
+
+static void bitwise_pixels_set_xy( bitwise_pixels* pxl, int x, int y, unsigned int width, unsigned int height, int val ) {
+    int nbytes_per_row = width/8 + (width%8>=1);
+    int byte_idx = x/8 + y*nbytes_per_row;
+    int bit_idx = x%8;
+    bitwise_pixels_set( pxl+byte_idx, bit_idx, val );
+}
+
+static int bitwise_pixels_get_xy( const bitwise_pixels* pxl, int x, int y, unsigned int width, unsigned int height ) {
+    int nbytes_per_row = width/8 + (width%8>=1);
+    int byte_idx = x/8 + y*nbytes_per_row;
+    int bit_idx = x%8;
+    return bitwise_pixels_get( pxl+byte_idx, bit_idx );
+}
+
+static void bitwise_pixels_edges_set( const bitwise_pixels* lock,
+        bitwise_pixels* mask, unsigned int width, unsigned int height,
+        int edgewidth ) {
+    for (int x=0; x<width; ++x) for (int y=0; y<height; ++y) {
+        int colored = bitwise_pixels_get_xy( lock, x, y, width, height );
+        if (!colored) {
+            for (int i=-edgewidth; i<=edgewidth; ++i) for (int j=-edgewidth; j<=edgewidth; ++j)
+                bitwise_pixels_set_xy( mask, (x+i+width)%width, (y+j+height)%height, width, height, 0 );
+        }
+    }
+}
+
+static void bitwise_pixels_toggle( bitwise_pixels* pxl, unsigned int width, unsigned int height ) {
+    for (int x=0; x<width; ++x) for (int y=0; y<height; ++y)
+        bitwise_pixels_toggle_xy( pxl, x, y, width, height );
+}
+
 void xtrlock_bitmap_read( const char* file ) {
     if (file == NULL) {
         lock_bits = _lock_bits;
@@ -84,13 +134,8 @@ void xtrlock_bitmap_read( const char* file ) {
         mask_width = width;
         mask_height = height;
 
-        int nbytes_per_row = width/8 + (width%8>=1);
-        for (int y=0; y<height; ++y) for (int x=0; x<width; ++x) {
-            int byte_idx = x/8 + y*nbytes_per_row;
-            int bit_idx = x%8;
-            int pixel_on = (x==0 || x==width-1 || y==0 || y==height-1);
-            bitwise_pixels_set( (bitwise_pixels*)(mask_bits+byte_idx), bit_idx, !pixel_on );
-        }
+        bitwise_pixels_edges_set( (const bitwise_pixels*)lock_bits, (bitwise_pixels*)mask_bits, width, height, 2);
+        bitwise_pixels_toggle( (bitwise_pixels*) mask_bits, width, height );
 
         if (!err) free_memory = 1;
         else xtrlock_bitmap_read(NULL);
