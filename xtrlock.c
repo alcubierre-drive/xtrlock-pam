@@ -32,12 +32,7 @@
 
 #include "config.h"
 
-//#include "lock.bitmap"
-//#include "mask.bitmap"
-#include "awesome.bitmap"
-#include "awesome_mask.bitmap"
-
-#include "loadbmp.h"
+#include "bitmap.h"
 
 //#define DEBUGPRN
 #include "dbg.h"
@@ -338,12 +333,14 @@ static void help() {
     printf(" -s      suspend-mode; hack to support USB device after suspend\n");
     printf(" -c COL  bg colors for [pre,active,failed] authentification\n");
     printf(" -g COL  fg color for [...] authentification\n");
+    printf(" -B FILE read bitmap for lock from FILE\n");
 }
 
 int main(int argc, char *argv[]) {
     int opt;
     char colors[512];
-    while ((opt = getopt(argc, argv, "b:p:fc:g:h")) != -1) {
+    xtrlock_bitmap_read( NULL );
+    while ((opt = getopt(argc, argv, "b:p:fc:g:hB:")) != -1) {
         switch (opt) {
         case 'h':
             help();
@@ -377,7 +374,6 @@ int main(int argc, char *argv[]) {
 
             int i=0;
             while(ptr != NULL) {
-                printf("%i: %s\n",i,ptr);
                 if (i==AUTH_NONE || i==AUTH_NOW || i==AUTH_FAILED)
                     if (ptr) strcpy(cursors[i].bg,ptr);
                 ptr = strtok(NULL, delim);
@@ -391,10 +387,15 @@ int main(int argc, char *argv[]) {
             strcpy( cursors[AUTH_FAILED].fg, colors );
             break;
 
+        case 'B':
+            xtrlock_bitmap_read( optarg );
+            break;
+
         default:
             exit(1);
         }
     }
     lock(bg_action);
+    xtrlock_bitmap_cleanup();
     return 0;
 }

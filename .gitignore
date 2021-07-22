@@ -1,5 +1,3 @@
-config.mk
-config.h
-repl.py
-.config/*.pyc
-README.html
+*.c.o
+*.d
+xtrlock-pam

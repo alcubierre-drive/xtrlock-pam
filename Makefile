@@ -1,7 +1,25 @@
-## miniconf makefiles ## 1.1 ##
+NAME := xtrlock-pam
+CC := gcc
+LD := gcc
 
-TOPDIR := .
+CFLAGS := -DNDEBUG -O2
+LDFLAGS := -lX11 -lpam
 
-SUBDIRS := src
+SRC := $(wildcard *.c)
+OBJ := $(patsubst %.c,%.c.o,$(SRC))
 
-include $(TOPDIR)/.config/rules.mk
+.PHONY: all clean
+
+all: $(NAME)
+
+$(NAME): $(OBJ)
+	$(LD) $^ $(LDFLAGS) -o $@
+
+%.c.o: %.c %.h Makefile
+	$(CC) $(CFLAGS) -MMD -o $@ -c $<
+
+%.c.o: %.c Makefile
+	$(CC) $(CFLAGS) -MMD -o $@ -c $<
+
+clean:
+	-@rm -f *.o *.d xtrlock-pam
