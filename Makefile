@@ -8,7 +8,7 @@ LDFLAGS := -lX11 -lpam
 SRC := $(wildcard *.c)
 OBJ := $(patsubst %.c,%.c.o,$(SRC))
 
-.PHONY: all clean
+.PHONY: all clean install
 
 all: $(NAME)
 
@@ -25,3 +25,9 @@ $(NAME): $(OBJ)
 
 clean:
 	-@rm -f *.o *.d xtrlock-pam
+
+install: all
+	@mkdir -p $(PREFIX)/usr/bin/
+	@cp xtrlock-pam $(PREFIX)/usr/bin/xtrlock-pam
+	@mkdir -p $(PREFIX)/usr/local/share/
+	@cp -r bitmaps/ $(PREFIX)/usr/local/share/xtrlock-pam-bitmaps/
