@@ -333,14 +333,16 @@ static void help() {
     printf(" -s      suspend-mode; hack to support USB device after suspend\n");
     printf(" -c COL  bg colors for [pre,active,failed] authentification\n");
     printf(" -g COL  fg color for [...] authentification\n");
+    printf(" -e NUM  edgewidth of mask when reading .bitmap FILE\n");
     printf(" -B FILE read bitmap for lock from FILE\n");
 }
 
 int main(int argc, char *argv[]) {
     int opt;
     char colors[512];
-    xtrlock_bitmap_read( NULL );
-    while ((opt = getopt(argc, argv, "b:p:fc:g:hB:")) != -1) {
+    int edgewidth = 1;
+    xtrlock_bitmap_read( NULL, edgewidth );
+    while ((opt = getopt(argc, argv, "b:p:fc:g:hB:e:")) != -1) {
         switch (opt) {
         case 'h':
             help();
@@ -387,8 +389,12 @@ int main(int argc, char *argv[]) {
             strcpy( cursors[AUTH_FAILED].fg, colors );
             break;
 
+        case 'e':
+            edgewidth = atoi(optarg);
+            break;
+
         case 'B':
-            xtrlock_bitmap_read( optarg );
+            xtrlock_bitmap_read( optarg, edgewidth );
             break;
 
         default:

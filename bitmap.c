@@ -107,7 +107,7 @@ static void bitwise_pixels_toggle( bitwise_pixels* pxl, unsigned int width, unsi
         bitwise_pixels_toggle_xy( pxl, x, y, width, height );
 }
 
-void xtrlock_bitmap_read( const char* file ) {
+void xtrlock_bitmap_read( const char* file, int edgewidth ) {
     if (file == NULL) {
         lock_bits = _lock_bits;
         lock_width = _lock_width;
@@ -134,11 +134,12 @@ void xtrlock_bitmap_read( const char* file ) {
         mask_width = width;
         mask_height = height;
 
-        bitwise_pixels_edges_set( (const bitwise_pixels*)lock_bits, (bitwise_pixels*)mask_bits, width, height, 2);
+        bitwise_pixels_edges_set( (const bitwise_pixels*)lock_bits,
+                (bitwise_pixels*)mask_bits, width, height, edgewidth );
         bitwise_pixels_toggle( (bitwise_pixels*) mask_bits, width, height );
 
         if (!err) free_memory = 1;
-        else xtrlock_bitmap_read(NULL);
+        else xtrlock_bitmap_read(NULL,0);
     }
 }
 

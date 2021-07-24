@@ -12,6 +12,8 @@ OBJ := $(patsubst %.c,%.c.o,$(SRC))
 
 all: $(NAME)
 
+-include *.d
+
 $(NAME): $(OBJ)
 	$(LD) $^ $(LDFLAGS) -o $@
 
