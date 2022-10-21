@@ -1,8 +1,8 @@
 NAME := xtrlock-pam
-CC := gcc
-LD := gcc
 
-CFLAGS := -DNDEBUG -O2
+CC ?= gcc
+
+CFLAGS ?= -DNDEBUG -O2
 LDFLAGS := -lX11 -lpam
 
 SRC := $(wildcard *.c)
@@ -15,7 +15,7 @@ all: $(NAME)
 -include *.d
 
 $(NAME): $(OBJ)
-	$(LD) $^ $(LDFLAGS) -o $@
+	$(CC) $^ $(LDFLAGS) -o $@
 
 %.c.o: %.c %.h Makefile
 	$(CC) $(CFLAGS) -MMD -o $@ -c $<
